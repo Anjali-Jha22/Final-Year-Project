@@ -10,6 +10,8 @@ import speech_recognition as sr
 import pyttsx3
 import time
 import eng_to_ipa as ipa
+from PIL import Image
+from pytesseract import pytesseract
 
 
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
@@ -69,24 +71,43 @@ my_tool = language_tool_python.LanguageTool('en-US')
 
 
 def image_to_text(path):
-    read_image = open(path, "rb")
-    read_response = computervision_client.read_in_stream(read_image, raw=True)
-    read_operation_location = read_response.headers["Operation-Location"]
-    operation_id = read_operation_location.split("/")[-1]
+    # read_image = open(path, "rb")
+    # read_response = computervision_client.read_in_stream(read_image, raw=True)
+    # read_operation_location = read_response.headers["Operation-Location"]
+    # operation_id = read_operation_location.split("/")[-1]
 
-    while True:
-        read_result = computervision_client.get_read_result(operation_id)
-        if read_result.status.lower() not in ['notstarted', 'running']:
-            break
-        time.sleep(5)
+    # while True:
+    #     read_result = computervision_client.get_read_result(operation_id)
+    #     if read_result.status.lower() not in ['notstarted', 'running']:
+    #         break
+    #     time.sleep(5)
 
-    text = []
-    if read_result.status == OperationStatusCodes.succeeded:
-        for text_result in read_result.analyze_result.read_results:
-            for line in text_result.lines:
-                text.append(line.text)
+    # text = []
+    # if read_result.status == OperationStatusCodes.succeeded:
+    #     for text_result in read_result.analyze_result.read_results:
+    #         for line in text_result.lines:
+    #             text.append(line.text)
 
-    return " ".join(text)
+    # return " ".join(text)
+    # Define path to tessaract.exe
+    path_to_tesseract = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+    # Define path to image
+    path_to_image = path
+
+    # Point tessaract_cmd to tessaract.exe
+    pytesseract.tesseract_cmd = path_to_tesseract
+
+    # Open image with PIL
+    img = Image.open(path_to_image)
+
+    # Extract text from image
+    text = pytesseract.image_to_string(img)
+    z = text.splitlines()
+    for i in z:
+        if i == '':
+            z.remove(i)
+    return " ".join(z)
 
 # '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
@@ -198,10 +219,14 @@ def percentage_of_phonetic_accuraccy(extracted_text: str):
 def get_feature_array(path: str):
     feature_array = []
     extracted_text = image_to_text(path)
+    print(extracted_text)
     feature_array.append(spelling_accuracy(extracted_text))
+    print('1', feature_array)
     feature_array.append(gramatical_accuracy(extracted_text))
-    feature_array.append(percentage_of_corrections(extracted_text))
-    feature_array.append(percentage_of_phonetic_accuraccy(extracted_text))
+    print('2', feature_array)
+    # feature_array.append(percentage_of_corrections(extracted_text))
+    # print('3', feature_array)
+    # feature_array.append(percentage_of_phonetic_accuraccy(extracted_text))
     return feature_array
 
 # '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
@@ -257,7 +282,8 @@ footer {visibility: hidden; }
 st.markdown(hide_menu_style, unsafe_allow_html=True)
 st.header("Dyslexia Web APP")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Home", "Writing", "Pronunciation", "Dictation", "About"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    ["Home", "Writing", "Pronunciation", "Dictation", "About"])
 
 with tab1:
     st.header("Home Page")
@@ -301,7 +327,8 @@ with tab2:
     st.write("This is a simple web app that works based on machine learning techniques. This application can predict the presence of dyslexia from the handwriting sample of a person.")
     with st.container():
         st.write("---")
-        image = st.file_uploader("Upload the handwriting sample that you want to test", type=["jpg"])
+        image = st.file_uploader(
+            "Upload the handwriting sample that you want to test", type=["jpg"])
         if image is not None:
             st.write("Please review the image selected")
             st.write(image.name)
@@ -314,15 +341,18 @@ with tab2:
                 feature_array = get_feature_array("temp.jpg")
                 result = score(feature_array)
                 if result[0] == 1:
-                    st.write("From the tests on this handwriting sample there is very slim chance that this person is sufferning from dyslexia or dysgraphia")
+                    st.write(
+                        "From the tests on this handwriting sample there is very slim chance that this person is sufferning from dyslexia or dysgraphia")
                 else:
-                    st.write("From the tests on this handwriting sample there is very high chance that this person is sufferning from dyslexia or dysgraphia")
+                    st.write(
+                        "From the tests on this handwriting sample there is very high chance that this person is sufferning from dyslexia or dysgraphia")
             except:
-                st.write("Something went wrong at the server end please refresh the application and try again")
+                st.write(
+                    "Something went wrong at the server end please refresh the application and try again")
 
 with tab3:
 
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+    # '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
     def get_10_word_array(level: int):
         if (level == 1):
@@ -330,17 +360,17 @@ with tab3:
             arr = voc.squeeze().to_numpy()
             selected_list = random.sample(list(arr), 10)
             return selected_list
-        elif(level == 2):
+        elif (level == 2):
             voc = pd.read_csv("data\intermediate_voc.csv")
             # return (type(voc))
             arr = voc.squeeze().to_numpy()
-            selected_list = random.sample(list(arr), 10) 
+            selected_list = random.sample(list(arr), 10)
             return selected_list
         else:
             return ([])
-    
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
-    
+
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+
     def listen_for(seconds: int):
         with sr.Microphone() as source:
             r = sr.Recognizer()
@@ -349,16 +379,16 @@ with tab3:
             text = r.recognize_google(audio_data)
             print(text)
             return text
- 
- #'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
-    
-    def talk(Word : str):
+
+ # '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+
+    def talk(Word: str):
         engine = pyttsx3.init()
         engine.say(Word)
         engine.runAndWait()
-    
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
-    
+
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+
     def levenshtein(s1, s2):
         if len(s1) < len(s2):
             return levenshtein(s2, s1)
@@ -377,74 +407,77 @@ with tab3:
             previous_row = current_row
         return previous_row[-1]
 
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
-    def check_pronounciation(str1 : str , str2: str):
+    def check_pronounciation(str1: str, str2: str):
         s1 = ipa.convert(str1)
         s2 = ipa.convert(str2)
-        return levenshtein(s1,s2)
+        return levenshtein(s1, s2)
 
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
-    
-    def dictate_10_words(level : int):
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+
+    def dictate_10_words(level: int):
         words = get_10_word_array(level)
         for i in words:
             talk(i)
             time.sleep(8)
         return words
 
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
     def random_seq():
-        list = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9']
+        list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
+                'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         return " ".join(random.sample(list, 5))
 
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
 
-
-#'''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
+# '''-------------------------------------------------------------------------------------------------------------------------------------------------------------------------'''
 
     tab1, tab2, tab3 = st.tabs(["Home", "pronounciation test", "phonetics"])
 
     level = 1
 
-
     with tab1:
         st.title("A Test for Dyslexia")
         option = st.selectbox(
-            "select your standard", ('2nd-4th', '5th-7th'), key= "pro")
-        if option=='2nd-4th':
+            "select your standard", ('2nd-4th', '5th-7th'), key="pro")
+        if option == '2nd-4th':
             level = 2
         elif option == '5th-7th':
             level = 1
 
     with tab2:
-        st.header("The pronounciation and reading ability of the user will be measured here")
+        st.header(
+            "The pronounciation and reading ability of the user will be measured here")
         pronounciation_test = st.button("Start a pronouncation test")
         pronounciation_inaccuracy = 0
-        
+
         if pronounciation_test:
-            st.subheader("Please repeate the following words you only has 10 seconds to do that.")
-         
+            st.subheader(
+                "Please repeate the following words you only has 10 seconds to do that.")
+
             arr = get_10_word_array(level)
             for i in range(len(arr)):
                 arr[i] = str(arr[i])
                 arr[i] = arr[i].strip()
 
             str_displayed = str(" ".join(arr))
-            words = st.text(">> " + "\n>>".join(arr) )
+            words = st.text(">> " + "\n>>".join(arr))
             status = st.text("listenning........")
             str_pronounced = listen_for(10)
             status.write("Time up! calculating inacuracy......")
-        
-        
-            pronounciation_inaccuracy = check_pronounciation(str_displayed, str_pronounced)/len(str_displayed)
-        
-            words.write("the pronounciation inacuuracy is: " + str(pronounciation_inaccuracy))
-            status.write("original : " + ipa.convert(str_displayed) )
+
+            pronounciation_inaccuracy = check_pronounciation(
+                str_displayed, str_pronounced)/len(str_displayed)
+
+            words.write("the proability of dyslexia is : " +
+                        str(pronounciation_inaccuracy*100)+"%")
+            status.write("original : " + ipa.convert(str_displayed))
             st.write("\npronounced: " + ipa.convert(str_pronounced))
-            
+
+
     with tab3:
         st.subheader("Phonetics")
         st.write("""
@@ -487,10 +520,8 @@ comfortable in any other part of the body other than at school, yet they have â€
 persists as a result of dyslexia, but learning how to read with the right support can improve your performance significantly. It has yet to be determined why this is. 
 Several studies show that learning difficulties lead to a significant underestimation of phonological processing and memory.
                  """)
-        
 
 
-    
 # with tab3:
 #     st.write("Now when you click this button you will start listening 10 words one by one please pay attention and type all those words in the field below with spaces in between. System wont repeat words.")
 #     start_listening = st.button("Start My test")
@@ -501,46 +532,45 @@ Several studies show that learning difficulties lead to a significant underestim
 #     time.sleep(5)
 #     st.write(str)
 #     st.write(dictated_words)
-  
+
 # @st.cache(suppress_st_warning=True)
 # def bind_socket():
 #     string =  random_seq()
 #     random_str = st.subheader(string)
 #     time.sleep(5)
 #     random_str.write("")
-    
-    
-              
+
+
 # with tab3:
 #     st.header("Memory Test")
 #     st.write("a sequence of 5 characters will be displayed for 5 seconds please try to remember and reproduce it later.")
 #     start_memory_t = st.button("Start memory Test")
 #     if start_memory_t:
 #         bind_socket()
-        
-        
-with tab4:   
-    def talk(Word : str):
+
+
+with tab4:
+    def talk(Word: str):
         engine = pyttsx3.init()
         engine.say(Word)
         engine.runAndWait()
-    
+
     def get_10_word_array(level: int):
         if (level == 1):
             voc = pd.read_csv("data\intermediate_voc.csv")
             arr = voc.squeeze().to_numpy()
             selected_list = random.sample(list(arr), 10)
             return selected_list
-        
-        elif(level == 2):
+
+        elif (level == 2):
             voc = pd.read_csv("data\elementary_voc.csv")
             arr = voc.squeeze().to_numpy()
-            selected_list = random.sample(list(arr), 10) 
+            selected_list = random.sample(list(arr), 10)
             return selected_list
         else:
             return ([])
-    
-    def dictate_10_words(level : int):
+
+    def dictate_10_words(level: int):
         words = get_10_word_array(level)
         for i in words:
             talk(i)
@@ -557,20 +587,20 @@ with tab4:
         for i, c1 in enumerate(s1):
             current_row = [i + 1]
             for j, c2 in enumerate(s2):
-            # j+1 instead of j since previous_row and current_row are one character longer
+                # j+1 instead of j since previous_row and current_row are one character longer
                 insertions = previous_row[j + 1] + 1
                 deletions = current_row[j] + 1       # than s2
                 substitutions = previous_row[j] + (c1 != c2)
                 current_row.append(min(insertions, deletions, substitutions))
             previous_row = current_row
         return previous_row[-1]
- 
 
     level = 1
     cb = st.checkbox('start dictation')
     if cb:
-        option = st.selectbox("select your standard", ('2nd-4th', '5th-7th'), key= "pro1")
-        if option=='2nd-4th':
+        option = st.selectbox("select your standard",
+                              ('2nd-4th', '5th-7th'), key="pro1")
+        if option == '2nd-4th':
             level = 2
         elif option == '5th-7th':
             level = 1
@@ -588,16 +618,13 @@ with tab4:
         w10 = form.text_input(label='word10')
         submit_button = form.form_submit_button(label='Submit')
 
-
-
         @st.cache
         def bind_socket():
-        # This function will only be run the first time it's called
+            # This function will only be run the first time it's called
             dictated_words = dictate_10_words(level)
             return dictated_words
 
-
-        dictated_words = bind_socket() 
+        dictated_words = bind_socket()
 # pr    int(dictated_words)
 
         if submit_button:
@@ -616,11 +643,10 @@ with tab4:
             print(typed_words)
             print(dictated_words)
 
-            st.write("your dictation score is (lesser the better) : " , levenshtein(" ".join(typed_words) , " ".join(dictated_words)))
+            st.write("percentage of dyslexia is: ", levenshtein(
+                " ".join(typed_words), " ".join(dictated_words)),"%")
             st.write("dictated words: " + " ".join(dictated_words))
             st.write("typed words: " + " ".join(typed_words))
-
-
 
 
 with tab5:
@@ -634,12 +660,13 @@ with tab5:
     Based on the spelling, grammatic, contextual and phonetics error the app predicts whether the person with the wrting has 
     dyslexia or not. 
     """)
-    st.subheader("Average corrections is less for a non-dyslexic child when compared to dyslexic child")
+    st.subheader(
+        "Average corrections is less for a non-dyslexic child when compared to dyslexic child")
     st.image("images\percentage_of_corrections.jpg")
-    
+
     st.subheader("Spelling accuracy for a dyslexic and a non-dyslexic child")
     st.image("images\spelling_accuracy.jpg")
-    
-    st.subheader("Average Phonetic accuracy comparision between a dyslexic and a non-dyslexic child ")
-    st.image("images\percentage_of_phonetic_accuraccy.jpg")
 
+    st.subheader(
+        "Average Phonetic accuracy comparision between a dyslexic and a non-dyslexic child ")
+    st.image("images\percentage_of_phonetic_accuraccy.jpg")
